@@ -7,12 +7,16 @@
            SELECT LIC-FILE ASSIGN TO "GPL_3.TXT"
                ORGANIZATION IS SEQUENTIAL.       
 
+           COPY "FCPROJECT.COB".
+
        DATA DIVISION.
        FILE SECTION.
        FD  LIC-FILE
                LABEL RECORDS ARE STANDARD.
-           01  LIC-CONTENT.
+       01  LIC-CONTENT.
            05  LIC-CHAR     PIC X.
+
+           COPY "FDPROJECT.COB".
 
        WORKING-STORAGE SECTION.
        77  EMPTY-LINE       PIC X      VALUE " ".
@@ -100,20 +104,30 @@
            05  LIC-EOF            PIC X         VALUE "N".
            05  LIC-CHAR-COUNT     PIC 999       VALUE ZERO.
 
-       01  NEW-PROJECT.
-           05  NP-NUMBER      PIC X(10)     VALUE SPACES.
-           05  NP-NAME        PIC X(20)     VALUE SPACES.
-           05  NP-DESCRIPTION PIC X(200)    VALUE SPACES.
-           05  NP-START-DATE  PIC X(10)     VALUE SPACES.
-           05  NP-END-DATE    PIC X(10)     VALUE SPACES.
+       01  PROJECT-ENTRY.
+           05  PE-ACCEPT       PIC X(80)     VALUE SPACE.
+           05  PE-DESCRIPTION  PIC X(800)    VALUE SPACE.
+           05  PE-CANCEL-SWITCH    PIC X     VALUE "N".
+               88 PE-CANCEL                  VALUE "Y".
+      *     05  NP-NUMBER      PIC X(10)     VALUE SPACES.
+      *     05  NP-NAME        PIC X(20)     VALUE SPACES.
+      *     05  NP-DESCRIPTION PIC X(200)    VALUE SPACES.
+      *     05  NP-START-DATE  PIC X(10)     VALUE SPACES.
+      *     05  NP-END-DATE    PIC X(10)     VALUE SPACES.
   
        PROCEDURE DIVISION.
-           
+           PERFORM INIT-PROGRAM.           
            PERFORM WRITE-START-INFO.
            PERFORM WRITE-MAIN-MENU.
+           PERFORM CLEAR-PROGRAM.
 
        STOP RUN.
 
+       INIT-PROGRAM.
+           OPEN I-O PROJECT-FILE.
+
+       CLEAR-PROGRAM.
+           CLOSE PROJECT-FILE.
 
        WRITE-START-INFO.
            DISPLAY EMPTY-LINE.
@@ -144,9 +158,8 @@
                    MOVE EMPTY-LINE TO MM-ERROR
                    PERFORM WRITE-MAIN-MENU
 	       WHEN "2"
-                   DISPLAY "YOU CHOOSE: " MAIN-MENU-ACCEPT
                    MOVE EMPTY-LINE TO MM-ERROR
-                   PERFORM WRITE-MAIN-MENU
+                   PERFORM ADD-NEW-PROJECT
                WHEN "3"
                    DISPLAY "YOU CHOOSE: " MAIN-MENU-ACCEPT
                    MOVE EMPTY-LINE TO MM-ERROR
@@ -180,3 +193,67 @@
                    ACCEPT ACCEPT-DUMMY
                    INITIALIZE LIC-CHAR-COUNT.
 
+        ADD-NEW-PROJECT.
+            DISPLAY EMPTY-LINE.
+            DISPLAY "******************************".
+            DISPLAY "*      Add new project       *".
+            DISPLAY "*Enter zero (0) and press    *".
+            DISPLAY "*enter at any input to cancel*".
+            DISPLAY "*and return to main menu.    *".
+            DISPLAY "******************************".
+            DISPLAY EMPTY-LINE.
+            PERFORM GET-PROJECT-INFO.
+            PERFORM WRITE-MAIN-MENU.
+
+       GET-PROJECT-INFO.
+           PERFORM GET-PROJECT-NUMBER.
+           IF NOT PE-CANCEL
+               PERFORM GET-PROJECT-NAME.
+               IF NOT PE-CANCEL
+                   PERFORM GET-PROJECT-DESCRIPTION
+                   PERFORM GET-PROJECT-FIRST-NAME.
+           IF PE-CANCEL
+               MOVE "Add new project canceled..." TO MM-ERROR
+           ELSE
+               MOVE "New project added." TO MM-ERROR.
+
+           MOVE "N" TO  PE-CANCEL-SWITCH.
+
+       GET-PROJECT-NUMBER.
+            DISPLAY "Enter project number:".
+            ACCEPT PE-ACCEPT.
+            MOVE PE-ACCEPT TO PR-NUMBER.
+            PERFORM CHECK-CANCEL-INPUT.
+
+       GET-PROJECT-NAME.
+           DISPLAY "Enter project name:"
+           ACCEPT PE-ACCEPT.
+           MOVE PE-ACCEPT TO PR-NAME.
+           PERFORM CHECK-CANCEL-INPUT.
+
+       GET-PROJECT-DESCRIPTION.
+           DISPLAY "Enter project description,".
+           DISPLAY "continue to add lines until".
+           DISPLAY "a line with a zero(0):"
+           PERFORM GET-DESCRIPTION-ROWS
+               UNTIL PE-CANCEL.
+           MOVE PE-DESCRIPTION TO PR-DESCRIPTION.
+	   MOVE "N" TO PE-CANCEL-SWITCH.
+
+       GET-DESCRIPTION-ROWS.
+           ACCEPT PE-ACCEPT.
+           PERFORM CHECK-CANCEL-INPUT.
+           IF NOT PE-CANCEL
+               STRING PE-DESCRIPTION DELIMITED BY SIZE
+                      PE-ACCEPT DELIMITED BY SIZE
+                   INTO PE-DESCRIPTION.
+
+       GET-PROJECT-FIRST-NAME.
+           DISPLAY "Enter project leaders first name:".
+           ACCEPT PE-ACCEPT.
+           MOVE PE-ACCEPT TO PR-LEADER-FIRST-NAME.
+           PERFORM CHECK-CANCEL-INPUT.
+
+       CHECK-CANCEL-INPUT.
+           IF PE-ACCEPT = "0"
+               SET PE-CANCEL TO TRUE.
