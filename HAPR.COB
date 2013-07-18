@@ -105,15 +105,17 @@
            05  LIC-CHAR-COUNT     PIC 999       VALUE ZERO.
 
        01  PROJECT-ENTRY.
-           05  PE-ACCEPT       PIC X(80)     VALUE SPACE.
-           05  PE-DESCRIPTION  PIC X(800)    VALUE SPACE.
-           05  PE-CANCEL-SWITCH    PIC X     VALUE "N".
-               88 PE-CANCEL                  VALUE "Y".
-      *     05  NP-NUMBER      PIC X(10)     VALUE SPACES.
-      *     05  NP-NAME        PIC X(20)     VALUE SPACES.
-      *     05  NP-DESCRIPTION PIC X(200)    VALUE SPACES.
-      *     05  NP-START-DATE  PIC X(10)     VALUE SPACES.
-      *     05  NP-END-DATE    PIC X(10)     VALUE SPACES.
+           05  PE-ACCEPT           PIC X(80)     VALUE SPACE.
+           05  PE-ACCEPT-DATE      PIC 9(8)      VALUE ZERO.
+           05  PE-YEAR             PIC 9(4)      VALUE ZERO.
+           05  PE-LEAP-YEAR        PIC 9         VALUE ZERO.
+           05  PE-MONTH            PIC 9(2)      VALUE ZERO.
+           05  PE-DAY              PIC 9(2)      VALUE ZERO.
+           05  PE-DATE-SWITCH      PIC X         VALUE "N".
+               88  PE-DATE-OK                    VALUE "Y".    
+           05  PE-DESCRIPTION      PIC X(800)    VALUE SPACE.
+           05  PE-CANCEL-SWITCH    PIC X         VALUE "N".
+               88 PE-CANCEL                      VALUE "Y".
   
        PROCEDURE DIVISION.
            PERFORM INIT-PROGRAM.           
@@ -212,6 +214,10 @@
                IF NOT PE-CANCEL
                    PERFORM GET-PROJECT-DESCRIPTION
                    PERFORM GET-PROJECT-FIRST-NAME.
+                   IF NOT PE-CANCEL
+                       PERFORM GET-PROJECT-SURNAME.
+                       IF NOT PE-CANCEL
+                           PERFORM GET-PROJECT-START-DATE.
            IF PE-CANCEL
                MOVE "Add new project canceled..." TO MM-ERROR
            ELSE
@@ -253,6 +259,60 @@
            ACCEPT PE-ACCEPT.
            MOVE PE-ACCEPT TO PR-LEADER-FIRST-NAME.
            PERFORM CHECK-CANCEL-INPUT.
+
+       GET-PROJECT-SURNAME.
+           DISPLAY "Enter project leaders surname:".
+           ACCEPT PE-ACCEPT.
+           MOVE PE-ACCEPT TO PR-LEADER-SURNAME.
+           PERFORM CHECK-CANCEL-INPUT.
+
+       GET-PROJECT-START-DATE.
+           DISPLAY "Enter start date in format YYYYMMDD:".
+           PERFORM CHECK-DATE
+               WITH TEST AFTER
+               UNTIL PE-DATE-OK OR PE-CANCEL.
+
+       CHECK-DATE.
+           ACCEPT PE-ACCEPT-DATE.
+           PERFORM CHECK-CANCEL-INPUT.
+           COMPUTE PE-YEAR = PE-ACCEPT-DATE / 10000.
+	   IF PE-YEAR >= 1900 AND <= 3000
+               COMPUTE PE-MONTH = 
+                       (PE-ACCEPT-DATE - PE-YEAR * 10000) / 100
+               IF PE-MONTH >= 1 AND <= 12
+                   COMPUTE PE-DAY =
+                           (PE-ACCEPT-DATE - (PE-YEAR * 10000 +
+                           PE-MONTH * 100))
+                   MOVE FUNCTION REM (PE-YEAR 4) TO PE-LEAP-YEAR
+                   IF PE-MONTH = 4 AND PE-DAY >= 1 AND <= 30
+                       SET PE-DATE-OK TO TRUE
+                       DISPLAY "APRIL"
+                   ELSE IF PE-MONTH = 6  AND PE-DAY >= 1 AND <= 30
+                       SET PE-DATE-OK TO TRUE
+                   ELSE IF PE-MONTH = 9  AND PE-DAY >= 1 AND <= 30
+                       SET PE-DATE-OK TO TRUE
+                   ELSE IF PE-MONTH = 11 AND PE-DAY >= 1 AND <= 30
+                       SET PE-DATE-OK TO TRUE
+                   ELSE IF PE-MONTH = 2  AND PE-DAY >= 1 AND <= 29 
+                           AND PE-LEAP-YEAR = 0
+                       SET PE-DATE-OK TO TRUE
+                   ELSE IF PE-MONTH = 2  AND PE-DAY >= 1 AND <= 28
+                       SET PE-DATE-OK TO TRUE
+                   ELSE IF PE-MONTH = 1 OR 3 OR 5 OR 7 OR 8 OR 10 OR 12
+                           AND PE-DAY >= 1 AND <= 31
+                        SET PE-DATE-OK TO TRUE
+                       DISPLAY "ALL OTHER MONTHS"
+                   ELSE
+                       MOVE "N" TO PE-DATE-SWITCH
+               ELSE
+                   MOVE "N" TO PE-DATE-SWITCH
+           ELSE
+               MOVE "N" TO PE-DATE-SWITCH.           
+           
+           IF NOT PE-DATE-OK
+               DISPLAY "Wrong date format."
+               DISPLAY "Format should be: YYYYMMDD"
+               DISPLAY " ... try again.".
 
        CHECK-CANCEL-INPUT.
            IF PE-ACCEPT = "0"
