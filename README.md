@@ -22,3 +22,9 @@ Handle your projects.
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Project is tested and compiled with opencobol <http://www.opencobol.org>.
+
+To run application:
+-Install opencobol
+-Clone project
+-Go to project directory
+-Run make

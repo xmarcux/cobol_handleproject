@@ -1,0 +1,16 @@
+all: HAPR
+
+HAPR: HAPR.o DATEOK.o PROJADD.o
+	cobc -x -o HAPR HAPR.o DATEOK.o PROJADD.o
+
+HAPR.o: HAPR.COB
+	cobc -c -x HAPR.COB
+
+DATEOK.o: DATEOK.COB
+	cobc -c DATEOK.COB
+
+PROJADD.o: PROJADD.COB
+	cobc -c PROJADD.COB
+
+clean: 
+	rm *.o *~ HAPR
