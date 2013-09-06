@@ -115,8 +115,8 @@
 
            EVALUATE MAIN-MENU-ACCEPT
                WHEN "1"
-                   DISPLAY "YOU CHOOSE: " MAIN-MENU-ACCEPT
                    MOVE EMPTY-LINE TO MM-ERROR
+                   PERFORM VIEW-PROJECTS
                    PERFORM WRITE-MAIN-MENU
 	       WHEN "2"
                    MOVE EMPTY-LINE TO MM-ERROR
@@ -145,6 +145,9 @@
                MOVE "Add new project canceled..." TO MM-ERROR
            ELSE
                MOVE "New project added." TO MM-ERROR.
+
+       VIEW-PROJECTS.
+           CALL "PROJVIEW".
 
        PRINT-LICENCE-FILE.
            READ LIC-FILE
