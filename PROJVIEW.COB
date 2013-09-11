@@ -16,10 +16,22 @@
            05  CD-MONTH       PIC 9(2).
            05  CD-DAY         PIC 9(2).
 
-       77  PROJECT-COUNT      PIC 999      VALUE ZERO.
+       77  PROJECT-COUNT      PIC 999      VALUE 1.
+       77  ACCEPT-DUMMY       PIC X.
+       77  ACCEPT-PROJECT-NO  PIC X(80)    VALUE SPACE.
+       77  DESC-COUNT         PIC 99       VALUE ZERO.
+
+       01  SWITCHES.
+           05  CANCEL-VIEW-SW PIC X        VALUE "N".
+               88  CANCEL-VIEW             VALUE "Y".
 
        01  PROJECT-FILE-SW    PIC X        VALUE "N".
            88  PROJECT-FILE-AT-END         VALUE "Y".
+
+       01  DISPLAY-ONE-PROJECT-NO.
+           05  DOP-BUDGET     PIC SZ(9)9.99 VALUE ZERO.
+           05  DOP-COST       PIC SZ(9)9.99 VALUE ZERO.
+           05  DOP-PROFIT     PIC SZ(9)9.99 VALUE ZERO.
 
        01  DISPLAY-PROJECT-NUMBER.
            05  DPN-SYMBOL     PIC X(4)     VALUE "  - ".
@@ -60,7 +72,7 @@
        PERFORM DISPLAY-HEADER.
        PERFORM READ-PROJECT
            UNTIL PROJECT-FILE-AT-END.
-       PERFORM DISPLAY-MENU. 
+       PERFORM DISPLAY-MENU-EXPLAIN. 
        PERFORM PROGRAM-CLEANUP.
 
        EXIT PROGRAM.
@@ -70,6 +82,10 @@
            MOVE 0 TO PROJECT-COUNT.
            MOVE "N" TO PROJECT-FILE-SW.
            MOVE SPACE TO DPN-NUMBER.
+           MOVE SPACE TO ACCEPT-PROJECT-NO.
+           MOVE "N" TO CANCEL-VIEW-SW.
+           MOVE 1 TO DESC-COUNT.
+           MOVE ZERO TO DISPLAY-ONE-PROJECT-NO.
            MOVE FUNCTION CURRENT-DATE TO CURRENT-DATE.
 
        PROGRAM-CLEANUP.
@@ -83,25 +99,38 @@
            DISPLAY HEAD-LINE.
            DISPLAY UNDERLINE-STAR.
 
-       DISPLAY-MENU.
+       DISPLAY-MENU-EXPLAIN.
            DISPLAY " ".
-           DISPLAY "     * = Project has past end date!".
+           DISPLAY "! = Project has past end date!".
+           DISPLAY " ".
+           DISPLAY "End of projects ...".
+           PERFORM DISPLAY-MENU.
+
+       DISPLAY-MENU.
            DISPLAY " ".
            DISPLAY 
             "To show project details enter project number:".
            DISPLAY "(Enter -1 to get back to main menu)".
+           PERFORM GET-PROJECT-NO
+               UNTIL CANCEL-VIEW.
 
        READ-PROJECT.
-           READ PROJECT-FILE NEXT
-               AT END SET PROJECT-FILE-AT-END TO TRUE.
-
+           IF PROJECT-COUNT NOT = 6
+               READ PROJECT-FILE NEXT
+                   AT END SET PROJECT-FILE-AT-END TO TRUE.
+	       
            IF NOT PROJECT-FILE-AT-END
+              AND PROJECT-COUNT NOT = 6
                PERFORM IS-PROJECT-LATE
-               PERFORM DISPLAY-ONE-PROJECT.
+               PERFORM DISPLAY-ONE-PROJECT
+
+           IF PROJECT-COUNT = 6 AND
+              NOT PROJECT-FILE-AT-END
+               PERFORM DISPLAY-MORE-PROJECTS.
 
        IS-PROJECT-LATE.
            IF PR-DATE (2) <= CURRENT-DATE
-               MOVE "* - " TO DPN-SYMBOL
+               MOVE "! - " TO DPN-SYMBOL
            ELSE
                MOVE "  - " TO DPN-SYMBOL.
 
@@ -117,5 +146,60 @@
            DISPLAY DISPLAY-PROJECT.
            DISPLAY UNDERLINE-HEAD.
 
-       PROJECTS-AT-END.
-           DISPLAY "End of projects ...".
+       DISPLAY-MORE-PROJECTS.
+           MOVE 0 TO PROJECT-COUNT.
+           DISPLAY 
+           "! = Project has past end date!  Enter to continue ...".
+           ACCEPT ACCEPT-DUMMY.
+           PERFORM DISPLAY-HEADER.
+
+       GET-PROJECT-NO.
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "-1"
+               SET CANCEL-VIEW TO TRUE
+           ELSE
+               MOVE ACCEPT-PROJECT-NO
+                    TO PR-NUMBER
+               READ PROJECT-FILE
+                   INVALID KEY PERFORM READ-KEY-ERROR
+                   NOT INVALID KEY
+                       PERFORM SHOW-COMPLETE-PROJECT.
+
+       READ-KEY-ERROR.
+           DISPLAY "Project number not found, please try again ...".
+
+       SHOW-COMPLETE-PROJECT.
+           DISPLAY "Project number:".
+           DISPLAY PR-NUMBER.
+           DISPLAY "Project name:".
+           DISPLAY PR-NAME.
+           DISPLAY "Description:".
+           PERFORM SHOW-DESCRIPTION
+               UNTIL DESC-COUNT = 10.
+           MOVE 1 TO DESC-COUNT.
+           DISPLAY "Project leader name:".
+           DISPLAY PR-LEADER-NAME.
+           DISPLAY "Project leader surname:".
+           DISPLAY PR-LEADER-SURNAME.
+           DISPLAY " ".
+           DISPLAY "Start date:".
+           DISPLAY PR-DATE (1).
+           DISPLAY "End date:".
+           DISPLAY PR-DATE (2).
+           DISPLAY "Enter to continue ...".
+           ACCEPT ACCEPT-DUMMY.
+           DISPLAY "Budget:".
+           MOVE PR-BUDGET TO DOP-BUDGET.
+           DISPLAY DOP-BUDGET.
+           DISPLAY "Cost:".
+           MOVE PR-COST TO DOP-COST.
+           DISPLAY DOP-COST.
+           COMPUTE DOP-PROFIT = PR-BUDGET - PR-COST.
+           DISPLAY "Profit:".
+           DISPLAY DOP-PROFIT.
+
+           PERFORM DISPLAY-MENU.
+
+       SHOW-DESCRIPTION.
+           DISPLAY PR-DESCRIPTION (DESC-COUNT).
+           ADD 1 TO DESC-COUNT.

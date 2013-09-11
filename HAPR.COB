@@ -50,13 +50,16 @@
                VALUE "* 1 - List all projects      *".
            05  FILLER         PIC X(2)      VALUE X'0D0A'.
            05  FILLER         PIC X(30)
-               VALUE "* 2 - Add new project        *".
+               VALUE "* 2 - Edit project           *".
            05  FILLER         PIC X(2)      VALUE X'0D0A'.
            05  FILLER         PIC X(30)
-               VALUE "* 3 - List closed projects   *".
+               VALUE "* 3 - Add new project        *".
            05  FILLER         PIC X(2)      VALUE X'0D0A'.
            05  FILLER         PIC X(30)
-               VALUE "* 4 - Show Licence (GPL V3)  *".
+               VALUE "* 4 - List closed projects   *".
+           05  FILLER         PIC X(2)      VALUE X'0D0A'.
+           05  FILLER         PIC X(30)
+               VALUE "* 5 - Show Licence (GPL V3)  *".
            05  FILLER         PIC X(2)      VALUE X'0D0A'.
            05  FILLER         PIC X(30)     VALUE ALL "*".
            05  FILLER         PIC X(2)      VALUE X'0D0A'.
@@ -118,15 +121,19 @@
                    MOVE EMPTY-LINE TO MM-ERROR
                    PERFORM VIEW-PROJECTS
                    PERFORM WRITE-MAIN-MENU
-	       WHEN "2"
+               WHEN "2"
+                   MOVE EMPTY-LINE TO MM-ERROR
+                   PERFORM EDIT-PROJECT
+                   PERFORM WRITE-MAIN-MENU
+	       WHEN "3"
                    MOVE EMPTY-LINE TO MM-ERROR
                    PERFORM ADD-NEW-PROJECT
                    PERFORM WRITE-MAIN-MENU
-               WHEN "3"
+               WHEN "4"
                    DISPLAY "YOU CHOOSE: " MAIN-MENU-ACCEPT
                    MOVE EMPTY-LINE TO MM-ERROR
                    PERFORM WRITE-MAIN-MENU
-               WHEN "4"
+               WHEN "5"
                    OPEN INPUT LIC-FILE
                    PERFORM PRINT-LICENCE-FILE
                        UNTIL LIC-EOF = "Y"
@@ -139,15 +146,18 @@
                    MOVE "Wrong entry ... try again" TO MM-ERROR
                    PERFORM WRITE-MAIN-MENU.
 
+       VIEW-PROJECTS.
+           CALL "PROJVIEW".
+
+       EDIT-PROJECT.
+           DISPLAY "YOU CHOOSE: EDIT PROJECT".
+
        ADD-NEW-PROJECT.
            CALL "PROJADD" USING PE-CANCEL-SWITCH.
            IF PE-CANCEL
                MOVE "Add new project canceled..." TO MM-ERROR
            ELSE
                MOVE "New project added." TO MM-ERROR.
-
-       VIEW-PROJECTS.
-           CALL "PROJVIEW".
 
        PRINT-LICENCE-FILE.
            READ LIC-FILE
