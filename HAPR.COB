@@ -150,7 +150,7 @@
            CALL "PROJVIEW".
 
        EDIT-PROJECT.
-           DISPLAY "YOU CHOOSE: EDIT PROJECT".
+           CALL "EDITPROJ".
 
        ADD-NEW-PROJECT.
            CALL "PROJADD" USING PE-CANCEL-SWITCH.
