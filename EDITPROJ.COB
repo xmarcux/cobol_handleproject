@@ -5,10 +5,12 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            COPY "FCPROJECT.COB".
+           COPY "FCHISTORY.COB".
 
        DATA DIVISION.
        FILE SECTION.
            COPY "FDPROJECT.COB".
+           COPY "FDHISTORY.COB".
 
        WORKING-STORAGE SECTION.
        01  ACCEPT-PROJECT.
@@ -17,6 +19,7 @@
            05  ACCEPT-PROJECT-DATE  PIC 9(8)       VALUE ZERO.
       
        77  SHOW-MONEY               PIC SZ(10).99  VALUE ZERO.
+       77  DESC-ROWS                PIC 99         VALUE ZERO.
 
        01  ERROR-TEXT.
            05 ET-NUMBER-ENTRY       PIC X(80)      VALUE SPACE.
@@ -49,6 +52,8 @@
            MOVE "N" TO CANCEL-EDIT-SW.
            MOVE SPACE TO ACCEPT-MENU-INPUT.
            MOVE SPACE TO ERROR-TEXT.
+           MOVE ZERO TO DESC-ROWS.
+           MOVE ZERO TO ACCEPT-PROJECT-DATE.
 
        PROGRAM-CLEANUP.
            CLOSE PROJECT-FILE.
@@ -82,6 +87,7 @@
            MOVE SPACE TO ET-NUMBER-ENTRY.
            PERFORM SHOW-EDIT-MENU
                UNTIL CANCEL-EDIT.
+           MOVE "N" TO CANCEL-EDIT-SW.
 
        SHOW-EDIT-MENU.
            DISPLAY " ".
@@ -91,16 +97,17 @@
            DISPLAY "* -1 - Cancel edit         *".
            DISPLAY "****************************".
            DISPLAY "*  1 - Edit number         *".
-           DISPLAY "*  2 - Edit description    *".
-           DISPLAY "*  3 - Edit leader name    *".
-           DISPLAY "*  4 - Edit leader surname *".
-           DISPLAY "*  5 - Edit start date     *".
-           DISPLAY "*  6 - Edit end date       *".
-           DISPLAY "*  7 - Edit budget         *".
-           DISPLAY "*  8 - Edit cost           *".
+           DISPLAY "*  2 - Edit name           *".
+           DISPLAY "*  3 - Edit description    *".
+           DISPLAY "*  4 - Edit leader name    *".
+           DISPLAY "*  5 - Edit leader surname *".
+           DISPLAY "*  6 - Edit start date     *".
+           DISPLAY "*  7 - Edit end date       *".
+           DISPLAY "*  8 - Edit budget         *".
+           DISPLAY "*  9 - Edit cost           *".
            DISPLAY "****************************".
-           DISPLAY "*  9 - Close project       *".
-           DISPLAY "* 10 - Delete project      *".
+           DISPLAY "* 10 - Close project       *".
+           DISPLAY "* 11 - Delete project      *".
            DISPLAY "****************************".
            DISPLAY ET-EDIT-ENTRY.
            DISPLAY "Choose number:".
@@ -118,31 +125,34 @@
                    PERFORM EDIT-NUMBER
                WHEN "2"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   DISPLAY "2"
+                   PERFORM EDIT-NAME
                WHEN "3"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-LEADER-NAME
+                   PERFORM EDIT-DESCRIPTION
                WHEN "4"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-LEADER-SURNAME
+                   PERFORM EDIT-LEADER-NAME
                WHEN "5"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-START-DATE
+                   PERFORM EDIT-LEADER-SURNAME
                WHEN "6"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-END-DATE
+                   PERFORM EDIT-START-DATE
                WHEN "7"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-BUDGET
+                   PERFORM EDIT-END-DATE
                WHEN "8"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   PERFORM EDIT-COST
+                   PERFORM EDIT-BUDGET
                WHEN "9"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   DISPLAY "9"
+                   PERFORM EDIT-COST
                WHEN "10"
                    MOVE SPACE TO ET-EDIT-ENTRY
-                   DISPLAY "10"
+                   PERFORM CLOSE-PROJECT
+               WHEN "11"
+                   MOVE SPACE TO ET-EDIT-ENTRY
+                   PERFORM DELETE-PROJECT
                WHEN OTHER 
                    MOVE "Wrong entry ... try again" TO ET-EDIT-ENTRY.
 
@@ -158,6 +168,21 @@
            ELSE
                MOVE "Update project number canceled" TO ET-EDIT-ENTRY.
 
+       EDIT-NAME.
+           DISPLAY "Current project name is:".
+           DISPLAY PR-NAME.
+           DISPLAY 
+               "Change project name and press enter to save:".
+           DISPLAY "(Enter -1 to cancel input)".
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO NOT = "-1"
+               MOVE ACCEPT-PROJECT-NO TO PR-NAME
+               PERFORM UPDATE-FILE
+               MOVE "Project name updated" TO ET-EDIT-ENTRY
+           ELSE
+               MOVE "Update project name canceled" 
+                   TO ET-EDIT-ENTRY.
+
        EDIT-DESCRIPTION.
            DISPLAY "Current description is:".
            DISPLAY PR-DESCRIPTION (1).
@@ -170,7 +195,42 @@
            DISPLAY PR-DESCRIPTION (8).
            DISPLAY PR-DESCRIPTION (9).
            DISPLAY PR-DESCRIPTION (10).
-           DISPLAY "Change discription.......".
+           DISPLAY "Change discription,".
+           DISPLAY "continue to add lines until".
+           DISPLAY "a line with minus one(-1) or maximum".
+           DISPLAY "ten(10) rows.".
+           DISPLAY "Minus one(-1) at first line cancel input:".
+           PERFORM GET-DESCRIPTION-ROWS
+                UNTIL CANCEL-EDIT OR
+                      DESC-ROWS >= 10.
+      
+           IF DESC-ROWS < 10 AND
+              DESC-ROWS > 1 AND CANCEL-EDIT
+               PERFORM CLEAR-DESC-END
+                   UNTIL DESC-ROWS > 10.
+
+           PERFORM UPDATE-FILE.
+
+           IF DESC-ROWS <=1 AND CANCEL-EDIT
+               MOVE "Description canceled" TO ET-EDIT-ENTRY
+           ELSE
+               MOVE "Description updated" TO ET-EDIT-ENTRY.
+
+           MOVE "N" TO CANCEL-EDIT-SW.
+           MOVE ZERO TO DESC-ROWS.
+
+       GET-DESCRIPTION-ROWS.
+            ADD 1 TO DESC-ROWS.
+            ACCEPT ACCEPT-PROJECT-NO.
+            IF ACCEPT-PROJECT-NO NOT = "-1"
+                MOVE ACCEPT-PROJECT-NO TO
+                     PR-DESCRIPTION(DESC-ROWS)
+            ELSE
+                SET CANCEL-EDIT TO TRUE.
+
+       CLEAR-DESC-END.
+           MOVE SPACE TO PR-DESCRIPTION (DESC-ROWS).
+           ADD 1 TO DESC-ROWS.
 
        EDIT-LEADER-NAME.
            DISPLAY "Current project leader name is:".
@@ -305,10 +365,27 @@
                MOVE "Update cost canceled" 
                    TO ET-EDIT-ENTRY.
 
-
-       CLOSE-PROJECT.
-
        DELETE-PROJECT.
+           DISPLAY "Do you want to delete project,".
+           DISPLAY "with number:".
+           DISPLAY PR-NUMBER.
+           DISPLAY "with name:".
+           DISPLAY PR-NAME.
+           DISPLAY "Answer (Y/N):".
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "Y"
+               DELETE PROJECT-FILE
+                   INVALID KEY 
+                       MOVE "Error deleting project!" TO
+                           ET-EDIT-ENTRY
+                   NOT INVALID KEY
+                       PERFORM PROJECT-DELETED
+           ELSE
+               MOVE "Delete project canceled" TO ET-EDIT-ENTRY.
+
+       PROJECT-DELETED.
+           DISPLAY "Project deleted!".
+           SET CANCEL-EDIT TO TRUE.
 
        EDIT-DATE.
 
@@ -326,3 +403,112 @@
                SET CANCEL-EDIT-DATE TO TRUE
            ELSE
                MOVE "N" TO CANCEL-EDIT-DATE-SW.
+
+       CLOSE-PROJECT.
+           DISPLAY "Do you want to close project,".
+           DISPLAY "and move project to history?".
+           DISPLAY "Answer (Y/N):".
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "Y"
+               PERFORM INIT-CLOSE-PROJECT
+           ELSE
+               MOVE "Close project canceled" TO ET-EDIT-ENTRY.
+
+       INIT-CLOSE-PROJECT.
+           OPEN OUTPUT HISTORY-FILE.
+           MOVE PR-NUMBER TO HI-NUMBER.
+           MOVE PR-NAME TO HI-NAME.
+           MOVE PR-DESCRIPTION (1) TO HI-DESCRIPTION (1).
+           MOVE PR-DESCRIPTION (2) TO HI-DESCRIPTION (2).
+           MOVE PR-DESCRIPTION (3) TO HI-DESCRIPTION (3).
+           MOVE PR-DESCRIPTION (4) TO HI-DESCRIPTION (4).
+           MOVE PR-DESCRIPTION (5) TO HI-DESCRIPTION (5).
+           MOVE PR-DESCRIPTION (6) TO HI-DESCRIPTION (6).
+           MOVE PR-DESCRIPTION (7) TO HI-DESCRIPTION (7).
+           MOVE PR-DESCRIPTION (8) TO HI-DESCRIPTION (8).
+           MOVE PR-DESCRIPTION (9) TO HI-DESCRIPTION (9).
+           MOVE PR-DESCRIPTION (10) TO HI-DESCRIPTION (10).
+           MOVE PR-LEADER-NAME TO HI-LEADER-NAME.
+           MOVE PR-LEADER-SURNAME TO HI-LEADER-SURNAME.
+           MOVE PR-DATE (1) TO HI-DATE (1).
+           MOVE PR-DATE (2) TO HI-DATE (2).
+           MOVE PR-BUDGET TO HI-BUDGET.
+           MOVE PR-COST TO HI-COST.
+           PERFORM EDIT-CLOSE-PROJECT.
+
+       EDIT-CLOSE-PROJECT.
+           DISPLAY "Did budget change from".
+           DISPLAY "original budget?".
+           DISPLAY "Enter final budget:".
+           DISPLAY "(Enter minus one(-1) if".
+           DISPLAY "budget has not changed)".
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "-1"
+               MOVE PR-BUDGET TO HI-ACTUAL-BUDGET
+           ELSE
+               MOVE ACCEPT-PROJECT-NO TO HI-ACTUAL-BUDGET.
+
+           DISPLAY "".
+           DISPLAY "Did cost change from".
+           DISPLAY "original cost?".
+           DISPLAY "Enter final cost:".
+           DISPLAY "(Enter minus one(-1) if".
+           DISPLAY "cost has not changed)".
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "-1"
+               MOVE PR-COST TO HI-ACTUAL-COST
+           ELSE
+               MOVE ACCEPT-PROJECT-NO TO HI-ACTUAL-COST.
+
+           DISPLAY "".
+           DISPLAY "Did end date change from".
+           DISPLAY "original end date?".
+           DISPLAY "Enter final end date:".
+           DISPLAY "(Enter minus one(-1) if".
+           DISPLAY "end date has not changed)".
+       *    ACCEPT ACCEPT-PROJECT-NO.
+       *Accept must be just once, and checked for cancel.
+       *    IF ACCEPT-PROJECT-NO = "-1"
+       *        MOVE PR-DATE(2) TO HI-ACTUAL-END-DATE
+       *    ELSE
+               PERFORM ACCEPT-FINAL-END-DATE
+                   UNTIL VALID-DATA
+
+       *        MOVE ACCEPT-PROJECT-DATE TO HI-ACTUAL-END-DATE.
+
+           PERFORM WRITE-TO-HISTORY.
+           SET CANCEL-EDIT TO TRUE.
+           MOVE "Project moved to history" TO ET-NUMBER-ENTRY.
+
+       WRITE-TO-HISTORY.
+           WRITE HISTORY-RECORD
+               INVALID KEY DISPLAY "Error writing project to history".
+           CLOSE HISTORY-FILE.
+           DELETE PROJECT-FILE
+               INVALID KEY DISPLAY 
+               "Error deleting project at move to history".
+
+       ACCEPT-FINAL-END-DATE.
+           ACCEPT ACCEPT-PROJECT-NO.
+           IF ACCEPT-PROJECT-NO = "-1"
+               MOVE PR-DATE(2) TO HI-ACTUAL-END-DATE
+           ELSE
+               MOVE ACCEPT-PROJECT-NO TO ACCEPT-PROJECT-DATE
+               CALL "DATEOK" USING VALID-DATA-SW
+                                   ACCEPT-PROJECT-DATE.
+
+           IF NOT VALID-DATA
+               DISPLAY "Wrong date format."
+               DISPLAY "Format should be: YYYYMMDD"
+               DISPLAY " ... try again.".
+
+           IF VALID-DATA AND
+               ACCEPT-PROJECT-DATE < PR-DATE (1)
+               MOVE "N" TO VALID-DATA-SW
+               DISPLAY "End date must be equal"
+               DISPLAY "or larger then start date."
+               DISPLAY "Start date:"
+               DISPLAY PR-DATE (1)
+               DISPLAY " ... try again."
+           ELSE
+               MOVE ACCEPT-PROJECT-DATE TO HI-ACTUAL-END-DATE.
