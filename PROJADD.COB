@@ -149,7 +149,7 @@
 
        GET-PROJECT-START-DATE.
            MOVE "N" TO VALID-DATA-SW.
-           DISPLAY "Enter start date in format YYYMMDD:".
+           DISPLAY "Enter start date in format YYYYMMDD:".
            SET GET-START-DATE TO TRUE.
            PERFORM ACCEPT-DATE
                WITH TEST AFTER
@@ -157,7 +157,7 @@
 
        GET-PROJECT-END-DATE.
            MOVE "N" TO VALID-DATA-SW.
-           DISPLAY "Enter end date in format YYYMMDD:".
+           DISPLAY "Enter end date in format YYYYMMDD:".
            MOVE "N" TO GET-START-DATE-SW.
            PERFORM ACCEPT-DATE
                WITH TEST AFTER

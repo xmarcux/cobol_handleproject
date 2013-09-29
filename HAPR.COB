@@ -130,8 +130,8 @@
                    PERFORM ADD-NEW-PROJECT
                    PERFORM WRITE-MAIN-MENU
                WHEN "4"
-                   DISPLAY "YOU CHOOSE: " MAIN-MENU-ACCEPT
                    MOVE EMPTY-LINE TO MM-ERROR
+                   PERFORM VIEW-HISTORY
                    PERFORM WRITE-MAIN-MENU
                WHEN "5"
                    OPEN INPUT LIC-FILE
@@ -158,6 +158,9 @@
                MOVE "Add new project canceled..." TO MM-ERROR
            ELSE
                MOVE "New project added." TO MM-ERROR.
+
+       VIEW-HISTORY.
+           CALL "HISTVIEW".
 
        PRINT-LICENCE-FILE.
            READ LIC-FILE

@@ -415,7 +415,7 @@
                MOVE "Close project canceled" TO ET-EDIT-ENTRY.
 
        INIT-CLOSE-PROJECT.
-           OPEN OUTPUT HISTORY-FILE.
+           OPEN I-O HISTORY-FILE.
            MOVE PR-NUMBER TO HI-NUMBER.
            MOVE PR-NAME TO HI-NAME.
            MOVE PR-DESCRIPTION (1) TO HI-DESCRIPTION (1).
@@ -443,7 +443,9 @@
            DISPLAY "(Enter minus one(-1) if".
            DISPLAY "budget has not changed)".
            ACCEPT ACCEPT-PROJECT-NO.
-           IF ACCEPT-PROJECT-NO = "-1"
+           IF ACCEPT-PROJECT-NO = "-1" OR
+              ACCEPT-PROJECT-NO = SPACE OR
+              ACCEPT-PROJECT-NO = LOW-VALUE
                MOVE PR-BUDGET TO HI-ACTUAL-BUDGET
            ELSE
                MOVE ACCEPT-PROJECT-NO TO HI-ACTUAL-BUDGET.
@@ -455,7 +457,9 @@
            DISPLAY "(Enter minus one(-1) if".
            DISPLAY "cost has not changed)".
            ACCEPT ACCEPT-PROJECT-NO.
-           IF ACCEPT-PROJECT-NO = "-1"
+           IF ACCEPT-PROJECT-NO = "-1" OR
+              ACCEPT-PROJECT-NO = SPACE OR
+              ACCEPT-PROJECT-NO = LOW-VALUE
                MOVE PR-COST TO HI-ACTUAL-COST
            ELSE
                MOVE ACCEPT-PROJECT-NO TO HI-ACTUAL-COST.
@@ -466,15 +470,9 @@
            DISPLAY "Enter final end date:".
            DISPLAY "(Enter minus one(-1) if".
            DISPLAY "end date has not changed)".
-       *    ACCEPT ACCEPT-PROJECT-NO.
-       *Accept must be just once, and checked for cancel.
-       *    IF ACCEPT-PROJECT-NO = "-1"
-       *        MOVE PR-DATE(2) TO HI-ACTUAL-END-DATE
-       *    ELSE
-               PERFORM ACCEPT-FINAL-END-DATE
-                   UNTIL VALID-DATA
-
-       *        MOVE ACCEPT-PROJECT-DATE TO HI-ACTUAL-END-DATE.
+           MOVE "N" TO VALID-DATA-SW.
+           PERFORM ACCEPT-FINAL-END-DATE
+               UNTIL VALID-DATA
 
            PERFORM WRITE-TO-HISTORY.
            SET CANCEL-EDIT TO TRUE.
@@ -489,11 +487,17 @@
                "Error deleting project at move to history".
 
        ACCEPT-FINAL-END-DATE.
+           MOVE SPACE TO ACCEPT-PROJECT-NO.
+           MOVE ZERO TO ACCEPT-PROJECT-DATE.
+
            ACCEPT ACCEPT-PROJECT-NO.
            IF ACCEPT-PROJECT-NO = "-1"
                MOVE PR-DATE(2) TO HI-ACTUAL-END-DATE
+               MOVE PR-DATE(2) TO ACCEPT-PROJECT-DATE
+               SET VALID-DATA TO TRUE
            ELSE
                MOVE ACCEPT-PROJECT-NO TO ACCEPT-PROJECT-DATE
+               MOVE "N" TO VALID-DATA-SW.
                CALL "DATEOK" USING VALID-DATA-SW
                                    ACCEPT-PROJECT-DATE.
 
